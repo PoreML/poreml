@@ -1,27 +1,12 @@
+
+
 # PoreML
 
-<iframe
-  width="560"
-  height="315"
-  src="https://www.youtube.com/embed/Q3ytK-H4Yg0"
-  title="Project demo"
-  allowfullscreen>
-</iframe>
+A benchmark for machine learning on pore-scale multiphase flow.
 
-A benchmark for machine learning on pore-scale multiphase flow: 560 lattice-Boltzmann
-trajectories in four campaigns (drainage, trapping, fuel-cell gas-diffusion layers, flip-chip
-underfill), a next-frame forecasting task, five reference models, and an evaluation protocol
-built on autonomous rollouts and physical descriptors — saturation, interface area, Euler
-characteristic, meniscus curvature — rather than per-voxel error alone.
 
-<p align="center">
-  <img src="assets/rollout.gif" width="100%"
-       alt="A 64-step autonomous rollout: lattice-Boltzmann ground truth beside the five reference models, each with its IoU">
-</p>
+https://github.com/user-attachments/assets/656b7297-4f39-45cb-80af-0825ba3f8eee
 
-*A 64-step autonomous rollout of drainage in a generated blob medium (M = 0.2, θ = 150°):
-the lattice-Boltzmann ground truth beside the five reference models after push-forward
-fine-tuning, each fed only its own predictions. IoU is that of the invading phase.*
 
 This repository holds the tasks, models, metrics, training and evaluation. The data lives on
 HuggingFace: [`PoreML/PoreML_data`](https://huggingface.co/datasets/PoreML/PoreML_data); the trained
