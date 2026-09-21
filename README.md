@@ -1,5 +1,13 @@
 # PoreML
 
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/Q3ytK-H4Yg0"
+  title="Project demo"
+  allowfullscreen>
+</iframe>
+
 A benchmark for machine learning on pore-scale multiphase flow: 560 lattice-Boltzmann
 trajectories in four campaigns (drainage, trapping, fuel-cell gas-diffusion layers, flip-chip
 underfill), a next-frame forecasting task, five reference models, and an evaluation protocol
