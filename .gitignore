@@ -23,6 +23,7 @@ repos/
 # case/<study>/ is generated (checkpoints, frames, per-frame CSVs, reports). Only the drivers,
 # SLURM workers and READMEs directly under case/<study>/ are source.
 case/*/*/
+case/.cache/
 util/*/_logs/
 util/*/_manifests/
 *.log

@@ -16,7 +16,8 @@ the lattice-Boltzmann ground truth beside the five reference models after push-f
 fine-tuning, each fed only its own predictions. IoU is that of the invading phase.*
 
 This repository holds the tasks, models, metrics, training and evaluation. The data lives on
-HuggingFace: [`PoreML/PoreML_data`](https://huggingface.co/datasets/PoreML/PoreML_data).
+HuggingFace: [`PoreML/PoreML_data`](https://huggingface.co/datasets/PoreML/PoreML_data); the trained
+weights are at [`PoreML/PoreML_checkpoint`](https://huggingface.co/PoreML/PoreML_checkpoint).
 
 ## Install
 
@@ -39,6 +40,35 @@ uv run poreml download                                    # everything
 
 The size of the selection is shown first and nothing is fetched until you agree. Files land
 under `data/case`, the layout every config expects; rerunning resumes.
+
+## Checkpoints
+
+The trained weights of the whole matrix — 35 base trainings and their 35 push-forward
+fine-tunes — are on HuggingFace:
+[`PoreML/PoreML_checkpoint`](https://huggingface.co/PoreML/PoreML_checkpoint).
+
+```bash
+uv run poreml checkpoints --dry-run                                  # what is there and how big it is (7 GB)
+uv run poreml checkpoints --phase train_push --which best_rollout    # the weights the paper reports
+uv run poreml checkpoints --campaign drainage --model unet --kind gen
+uv run poreml checkpoints                                            # everything
+```
+
+Filters are `--phase` (`train`, `train_push`), `--campaign`, `--model`, `--kind` (`gen`, `all`)
+and `--which` (`best`, `last`, `best_rollout`); they intersect and each is repeatable. Runs land
+under `case/train` and `case/train_push` as the run directories training would have written —
+`config.yaml`, `run_meta.json`, `metrics.csv`, `train_log.csv`, `ckpts/*.pt` — so the push
+configs' `train.init_from`, the transfer studies and `util/inference` find them as finished
+runs, and `submit.py --dry-run` lists those cells as done. Score one directly:
+
+```bash
+RUN=$(ls -d case/train_push/drainage/unet_gen/ckpts/*/)
+uv run poreml rollout -c $RUN/config.yaml --ckpt $RUN/ckpts/best_rollout.pt
+```
+
+Report `best.pt` for a base run and `best_rollout.pt` for a push-forward run. Optimiser state,
+per-epoch candidates and stored frames are not published; `poreml inference|metric|render`
+reproduce the latter from the weights.
 
 ## Demo
 
@@ -79,7 +109,7 @@ optimiser, metrics, rollout protocol.
 | `case/train_push/` | push-forward fine-tune of every finished training |
 | `case/shift/`, `case/shift_push/` | Geo-Shift: models trained on generated media, tested on micro-CT geometries |
 | `case/scale/`, `case/scale_push/` | Scale-Up: models trained at 128³, tested on 256³ domains |
-| `util/` | everything around the studies: `download.py`, `inference/` (timed validation rollouts of every training), `configs/`, `convert/` and `release/` (how the dataset was built and published), `archive/` (development history) |
+| `util/` | everything around the studies: `download.py` and `download_checkpoints.py`, `inference/` (timed validation rollouts of every training), `configs/`, `convert/` and `release/` (how the dataset and the checkpoints were built and published), `archive/` (development history) |
 
 Each folder has a README with its protocol. The SLURM workers take their partition and account
 from the environment (`SBATCH_PARTITION`, `SBATCH_ACCOUNT`); every driver has `--dry-run`.
@@ -116,4 +146,5 @@ just fmt        # ruff
 
 The model ports keep their upstream licences, listed in `NOTICE`: Transolver++ and FNO are MIT,
 P3D is Apache-2.0, and AB-UPT (`src/poreml/models/abupt.py`, `upt.py`) follows the Emmi AI
-Non-Production License — research and evaluation use only. The dataset is MIT-licensed.
+Non-Production License — research and evaluation use only. The dataset is MIT-licensed, and so are the published
+checkpoints except the `abupt` ones, which follow AB-UPT's licence.

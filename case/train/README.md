@@ -112,8 +112,9 @@ All models: conditions `M` and `theta` (never `ca`), wall channel on the point s
 
 ## Outputs, checkpoints, evaluation cadence
 
-Every task writes one run directory:
-
+Every task writes one run directory (`poreml checkpoints --phase train` downloads the finished
+ones — config, metadata, logs, `best.pt` and `last.pt` — into this same layout, and `submit.py`
+then skips those cells):
 ```
 case/train/<campaign>/<model>_<kind>/ckpts/<name>_<stamp>/
   config.yaml          the config as trained (resolved defaults included)

@@ -6,6 +6,10 @@ recipe; the only things that change are where the weights start (the base run's
 `best.pt`), how many epochs (half), the learning rate (a third), and what the model is shown
 during training.
 
+No base runs on disk? `uv run poreml checkpoints --phase train --which best` downloads every
+finished base run to the path the shipped `configs/push/` name in `train.init_from`;
+`--phase train_push` fetches the fine-tuned runs themselves.
+
 ## The trick in three sentences
 
 One-step training only ever shows the model clean simulator frames, but at rollout it

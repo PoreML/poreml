@@ -76,6 +76,63 @@ def download(
 
 
 @app.command()
+def checkpoints(
+    root: Annotated[Path, typer.Option("--root", help="Where the runs go: the folder holding train/ and train_push/")] = Path(
+        "case"
+    ),
+    phase: Annotated[
+        list[str] | None, typer.Option("--phase", help="train (base) | train_push (push-forward fine-tune); repeatable")
+    ] = None,
+    campaign: Annotated[
+        list[str] | None, typer.Option("--campaign", help="drainage | trapping | gdl | underfill; repeatable")
+    ] = None,
+    model: Annotated[
+        list[str] | None, typer.Option("--model", help="unet | fno | p3d | transolver | abupt; repeatable")
+    ] = None,
+    kind: Annotated[list[str] | None, typer.Option("--kind", help="Split the run trained on: gen | all; repeatable")] = None,
+    which: Annotated[
+        list[str] | None, typer.Option("--which", help="Weight file: best | last | best_rollout; repeatable (default: all)")
+    ] = None,
+    yes: Annotated[bool, typer.Option("--yes", "-y", help="Do not ask before downloading")] = False,
+    dry_run: Annotated[bool, typer.Option("--dry-run", help="Show what would be fetched and its size; fetch nothing")] = False,
+    workers: Annotated[int, typer.Option("--workers", min=1, help="Parallel downloads")] = 8,
+    repo: Annotated[str | None, typer.Option("--repo", help="HuggingFace model repository")] = None,
+) -> None:
+    """Download the benchmark's trained checkpoints from HuggingFace into the run directories under case/.
+
+    Without a filter every checkpoint is selected (7 GB). The filters intersect. Each run comes
+    with the config.yaml it is scored with, and lands where the push configs, the studies and
+    util/inference look a finished run up. The size is shown first and nothing is fetched until
+    you agree; files already on disk are skipped, so rerunning resumes.
+    """
+    from . import checkpoints as ck
+
+    try:
+        result = ck.download(
+            root,
+            repo_id=repo or ck.REPO_ID,
+            phases=phase or (),
+            campaigns=campaign or (),
+            models=model or (),
+            kinds=kind or (),
+            which=which or (),
+            workers=workers,
+            dry_run=dry_run,
+            confirm=None if yes else lambda prompt: typer.confirm(prompt, default=False),
+            echo=typer.echo,
+        )
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from e
+    if result["state"] == "declined":
+        typer.echo("nothing downloaded")
+        raise typer.Exit(code=1)
+    if result["state"] == "present":
+        typer.echo("everything selected is already on disk")
+    elif result["state"] == "downloaded":
+        typer.echo(f"downloaded {result['n_files']} file(s) into {result['root']}")
+
+
+@app.command()
 def train(
     config: Annotated[Path, typer.Option("--config", "-c", exists=True, help="Path to a run config YAML")],
     resume: Annotated[

@@ -1,4 +1,4 @@
-"""Push `data/case` to a HuggingFace dataset repository, structure preserved.
+"""Push a folder to a HuggingFace repository, structure preserved: `data/case`, or the staged checkpoints.
 
 The repository **is** the dataset directory: its root holds `drainage/`, `GDL/`, `trapping/`,
 `underfill/`, the card and `assets/`, so
@@ -20,6 +20,13 @@ listing or a log:
 
     uv run python util/release/upload_hf.py --repo PoreML/PoreML_data
     uv run python util/release/upload_hf.py --repo PoreML/PoreML_data --dry-run
+
+The checkpoints go the same way, from the tree `stage_checkpoints.py` has scrubbed and swept —
+never from `case/` itself, whose run metadata names the machine and the user:
+
+    uv run python util/release/stage_checkpoints.py
+    uv run python util/release/upload_hf.py --repo PoreML/PoreML_checkpoint --repo-type model \
+        --folder data/release/checkpoints
 """
 
 from __future__ import annotations
@@ -59,6 +66,7 @@ def survey(folder: Path) -> tuple[int, int]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--repo", required=True, help="e.g. PoreML/PoreML_data")
+    ap.add_argument("--repo-type", choices=("dataset", "model"), default="dataset")
     ap.add_argument("--folder", type=Path, default=DEFAULT_FOLDER)
     ap.add_argument("--token-file", type=Path, default=DEFAULT_TOKEN_FILE)
     ap.add_argument("--workers", type=int, default=8, help="parallel hash/upload workers")
@@ -74,7 +82,8 @@ def main(argv: list[str] | None = None) -> int:
     files, size = survey(folder)
     print(f"folder   {folder}")
     print(f"contents {files} files, {size / 1e9:.0f} GB")
-    print(f"target   https://huggingface.co/datasets/{args.repo}  (root = this folder's contents)")
+    url = f"https://huggingface.co/{'datasets/' if args.repo_type == 'dataset' else ''}{args.repo}"
+    print(f"target   {url}  (root = this folder's contents)")
 
     token = token_from(args.token_file)
     api = HfApi(token=token)
@@ -85,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         print("dry run — nothing uploaded")
         return 0
 
-    api.create_repo(args.repo, repo_type="dataset", private=args.private, exist_ok=True)
+    api.create_repo(args.repo, repo_type=args.repo_type, private=args.private, exist_ok=True)
     # Fail loudly and early on a token that can only open a pull request, rather than after
     # hours of hashing: create_commit is the same permission the folder push needs.
     from huggingface_hub import CommitOperationAdd, CommitOperationDelete
@@ -94,13 +103,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         api.create_commit(
             args.repo,
-            repo_type="dataset",
+            repo_type=args.repo_type,
             operations=[CommitOperationAdd(path_in_repo=probe, path_or_fileobj=b"probe\n")],
             commit_message="probe: verify write access",
         )
         api.create_commit(
             args.repo,
-            repo_type="dataset",
+            repo_type=args.repo_type,
             operations=[CommitOperationDelete(path_in_repo=probe)],
             commit_message="probe: remove",
         )
@@ -120,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
     # fall back to whatever is cached on the machine.
     api.upload_large_folder(
         repo_id=args.repo,
-        repo_type="dataset",
+        repo_type=args.repo_type,
         folder_path=str(folder),
         ignore_patterns=IGNORE,
         num_workers=args.workers,
@@ -129,7 +138,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     dt = time.time() - started
     print(f"\ndone in {dt / 3600:.2f} h ({size / 1e6 / max(dt, 1):.0f} MB/s average)")
-    print(f"https://huggingface.co/datasets/{args.repo}")
+    print(url)
     return 0
 
 
