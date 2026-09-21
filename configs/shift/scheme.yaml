@@ -1,0 +1,56 @@
+# Geo-Shift protocol — shared by every campaign and model under configs/shift/ (see case/shift/README.md).
+#
+# A cell scores its checkpoint with the config.yaml saved in the checkpoint's run directory
+# (task, fields, conditions, model: exactly what the weights were trained on) plus this file:
+# poreml.study.derive swaps in the horizon, keyframes and metrics below and the campaign's
+# data.yaml, nothing else. The stride goes to the inference stage directly.
+horizon: 64        # steps per rollout window = 64 saved frames = 320k LBM steps
+stride: 64         # window starts every 64 frames from frame 0: windows tile the run; a window that
+                   # does not fit is discarded (a run under 65 frames yields none and is listed)
+keyframes: 12      # stored and scored steps per window: 1, 7, 12, 18, 24, 30, 35, 41, 47, 53, 58, 64
+
+# Scored on every stored frame by the CPU metric stage. The first entry is the criterion.
+# Fields: mae / rel_mae per field, velocity as one vector number (|Δu| mean, and / mean speed).
+# Descriptors: value on both sides, absolute and relative error. Mesh family: ~1.5 s per side at 128.
+metrics:
+  - {error: mae, channel: phi}
+  - {error: rel_mae, channel: phi}
+  - {error: iou, channel: phi}
+  - {error: mae, channel: p}
+  - {error: rel_mae, channel: p}
+  - {error: mae_vec, channel: u}
+  - {error: rel_mae_vec, channel: u}
+
+  - {descriptor: saturation, error: pred, channel: phi}
+  - {descriptor: saturation, error: target, channel: phi}
+  - {descriptor: saturation, error: abs_err, channel: phi}
+  - {descriptor: saturation, error: rel_err, channel: phi}
+  - {descriptor: volume, error: pred, channel: phi}
+  - {descriptor: volume, error: target, channel: phi}
+  - {descriptor: volume, error: abs_err, channel: phi}
+  - {descriptor: volume, error: rel_err, channel: phi}
+  - {descriptor: area, error: pred, channel: phi}
+  - {descriptor: area, error: target, channel: phi}
+  - {descriptor: area, error: abs_err, channel: phi}
+  - {descriptor: area, error: rel_err, channel: phi}
+  - {descriptor: euler, error: pred, channel: phi}
+  - {descriptor: euler, error: target, channel: phi}
+  - {descriptor: euler, error: abs_err, channel: phi}
+  - {descriptor: euler, error: rel_err, channel: phi}
+
+  - {descriptor: mesh_area, error: pred, channel: phi, eval_only: true}
+  - {descriptor: mesh_area, error: target, channel: phi, eval_only: true}
+  - {descriptor: mesh_area, error: abs_err, channel: phi, eval_only: true}
+  - {descriptor: mesh_area, error: rel_err, channel: phi, eval_only: true}
+  - {descriptor: curvature_mean_integral, error: pred, channel: phi, eval_only: true}
+  - {descriptor: curvature_mean_integral, error: target, channel: phi, eval_only: true}
+  - {descriptor: curvature_mean_integral, error: abs_err, channel: phi, eval_only: true}
+  - {descriptor: curvature_mean_integral, error: rel_err, channel: phi, eval_only: true}
+  - {descriptor: curvature_mean_integral_norm, error: pred, channel: phi, eval_only: true}
+  - {descriptor: curvature_mean_integral_norm, error: target, channel: phi, eval_only: true}
+  - {descriptor: curvature_mean_integral_norm, error: abs_err, channel: phi, eval_only: true}
+  - {descriptor: curvature_mean_integral_norm, error: rel_err, channel: phi, eval_only: true}
+  - {descriptor: curvature_hist, error: pred, channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+  - {descriptor: curvature_hist, error: target, channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+  - {descriptor: curvature_hist, error: w1, channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+  - {descriptor: curvature_hist, error: w1_norm, channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}

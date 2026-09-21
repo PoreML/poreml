@@ -1,0 +1,8 @@
+# Geo-Shift test data for the trapping campaign — shared by every configs/shift/trapping/*.yaml cell.
+root: data/case              # the PoreML dataset: `poreml download` puts it here
+campaign: trapping
+split: splits/shift/trapping.yaml    # frozen, eval-only: every finished 128-class uCT run of the campaign
+                                     # (80 runs: bentheimer 28, buffberea 26, castlegate 26 @128^3)
+                                     # = train + val of splits/trapping/uCT.yaml;
+                                     # drawn and checked by case/shift/run.py split
+require_finished: true

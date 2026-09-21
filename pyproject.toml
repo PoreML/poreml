@@ -1,0 +1,94 @@
+[project]
+name = "poreml"
+version = "0.1.0"
+description = "Machine-learning benchmark for pore-scale multiphase flow"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "PoreML authors" }]
+dependencies = [
+    "h5py>=3.16",
+    "hdf5plugin>=5.0",
+    "huggingface-hub>=0.30",
+    "numpy>=2.2",
+    "pydantic>=2.12",
+    "pyyaml>=6.0",
+    "torch>=2.6",
+    "typer>=0.24",
+]
+
+[project.scripts]
+poreml = "poreml.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/poreml"]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+# CUDA wheels only exist for Linux and Windows; macOS resolves torch from PyPI. An
+# unconditional pin makes `uv sync` fail outright on Apple Silicon.
+torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.16",
+    { include-group = "viz" },
+    { include-group = "curvature" },
+    { include-group = "demo" },
+]
+# The walkthrough notebook: `uv sync --group demo`, then `uv run jupyter lab demo/demo.ipynb`.
+demo = [
+    "ipykernel>=6.29",
+    "ipywidgets>=8.1",
+    "jupyterlab>=4.2",
+    "matplotlib>=3.9",
+    "nbclient>=0.10",
+]
+# Interface geometry (marching cubes -> Taubin smoothing -> quadric-fit principal
+# curvatures): `uv sync --group curvature`. Kept out of the core like viz;
+# `poreml.metrics.surface` raises with this hint when the group is missing.
+curvature = [
+    "libigl>=2.5",
+    "scikit-image>=0.24",
+]
+# Rendering only: `uv sync --group viz`. Kept out of the core so a training node never
+# needs VTK; `poreml.viz` raises with this hint when the group is missing.
+viz = [
+    "matplotlib>=3.9",
+    "pillow>=10",
+    "pyvista>=0.48",
+    "vtk>=9.4",
+]
+
+[tool.ruff]
+line-length = 128
+target-version = "py312"
+# util/archive/ is a record, not code under maintenance: dev-era scripts, and specs whose
+# fenced code blocks are specification text ruff must not rewrite.
+exclude = ["util/archive", "repos"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+# The demo notebook is written in notebook style: `import a, b`, a chdir before the package
+# imports (a notebook has no fixed working directory), `ax.set_xticks([]); ax.set_yticks([])`.
+# Real errors (F) stay on; the layout rules do not apply to a document.
+[tool.ruff.lint.per-file-ignores]
+"*.ipynb" = ["E401", "E402", "E501", "E702", "B905", "I001"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+exclude = ["*.ipynb"]   # nbconvert owns the notebook's formatting
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

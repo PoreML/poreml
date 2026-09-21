@@ -1,0 +1,87 @@
+# Frozen split for the drainage / uCT training task (beta-0.99 campaign).
+# Drawn by splits/draw.py (seed 20260901) from finished small-domain runs of
+# the dataset (bentheimer, buffberea, castlegate). 64 train / 16 val; val rocks are
+# unseen in train (single-use geometries; the campaign reuses some rocks at another
+# (M, theta)), one val run per (M, theta) cell, source-stratified.
+train:
+- drain_bent128_0003_128_M0.05_th140_b99
+- drain_bent128_0005_128_M0.05_th150_b99
+- drain_bent128_0007_128_M1_th130_b99
+- drain_bent128_0010_128_M0.1_th140_b99
+- drain_bent128_0014_128_M1_th140_b99
+- drain_bent128_0016_128_M1_th130_b99
+- drain_bent128_0018_128_M1_th130_b99
+- drain_bent128_0020_128_M0.2_th130_b99
+- drain_bent128_0022_128_M1_th150_b99
+- drain_bent128_0024_128_M0.1_th120_b99
+- drain_bent128_0028_128_M0.05_th130_b99
+- drain_bent128_0032_128_M1_th140_b99
+- drain_bent128_0035_128_M0.2_th130_b99
+- drain_bent128_0036_128_M0.2_th150_b99
+- drain_bent128_0040_128_M1_th150_b99
+- drain_bent128_0041_128_M1_th140_b99
+- drain_bent128_0043_128_M0.05_th120_b99
+- drain_bent128_0046_128_M0.1_th150_b99
+- drain_bent128_0050_128_M0.2_th150_b99
+- drain_bent128_0052_128_M0.2_th150_b99
+- drain_bent128_0055_128_M0.1_th130_b99
+- drain_bent128_0063_128_M0.05_th130_b99
+- drain_buff128_0004_128_M0.1_th130_b99
+- drain_buff128_0007_128_M1_th130_b99
+- drain_buff128_0011_128_M1_th120_b99
+- drain_buff128_0014_128_M1_th140_b99
+- drain_buff128_0021_128_M0.1_th150_b99
+- drain_buff128_0022_128_M0.05_th130_b99
+- drain_buff128_0022_128_M0.1_th150_b99
+- drain_buff128_0024_128_M1_th150_b99
+- drain_buff128_0026_128_M0.05_th150_b99
+- drain_buff128_0029_128_M0.05_th150_b99
+- drain_buff128_0029_128_M0.2_th120_b99
+- drain_buff128_0031_128_M0.05_th130_b99
+- drain_buff128_0033_128_M0.05_th120_b99
+- drain_buff128_0036_128_M0.1_th130_b99
+- drain_buff128_0039_128_M0.05_th120_b99
+- drain_buff128_0044_128_M0.2_th150_b99
+- drain_buff128_0044_128_M1_th120_b99
+- drain_buff128_0046_128_M0.05_th140_b99
+- drain_buff128_0049_128_M0.2_th130_b99
+- drain_buff128_0055_128_M0.05_th120_b99
+- drain_buff128_0059_128_M0.2_th140_b99
+- drain_castle128_0000_128_M0.1_th120_b99
+- drain_castle128_0006_128_M0.05_th140_b99
+- drain_castle128_0006_128_M0.2_th140_b99
+- drain_castle128_0007_128_M0.2_th120_b99
+- drain_castle128_0007_128_M1_th120_b99
+- drain_castle128_0008_128_M0.05_th140_b99
+- drain_castle128_0008_128_M0.1_th140_b99
+- drain_castle128_0012_128_M0.2_th130_b99
+- drain_castle128_0012_128_M1_th120_b99
+- drain_castle128_0021_128_M0.1_th120_b99
+- drain_castle128_0021_128_M0.1_th140_b99
+- drain_castle128_0036_128_M0.05_th150_b99
+- drain_castle128_0036_128_M1_th150_b99
+- drain_castle128_0045_128_M0.1_th140_b99
+- drain_castle128_0049_128_M0.1_th130_b99
+- drain_castle128_0049_128_M0.1_th150_b99
+- drain_castle128_0051_128_M0.2_th140_b99
+- drain_castle128_0056_128_M0.2_th120_b99
+- drain_castle128_0056_128_M0.2_th140_b99
+- drain_castle128_0058_128_M0.1_th120_b99
+- drain_castle128_0058_128_M0.2_th120_b99
+val:
+- drain_bent128_0025_128_M1_th140_b99
+- drain_bent128_0030_128_M0.05_th140_b99
+- drain_bent128_0033_128_M0.1_th130_b99
+- drain_bent128_0038_128_M0.2_th140_b99
+- drain_bent128_0047_128_M0.1_th150_b99
+- drain_bent128_0049_128_M0.05_th130_b99
+- drain_buff128_0028_128_M0.2_th120_b99
+- drain_buff128_0032_128_M0.05_th150_b99
+- drain_buff128_0038_128_M0.1_th120_b99
+- drain_buff128_0041_128_M0.1_th140_b99
+- drain_buff128_0048_128_M0.05_th120_b99
+- drain_castle128_0001_128_M1_th130_b99
+- drain_castle128_0005_128_M0.2_th130_b99
+- drain_castle128_0009_128_M1_th150_b99
+- drain_castle128_0023_128_M0.2_th150_b99
+- drain_castle128_0030_128_M1_th120_b99

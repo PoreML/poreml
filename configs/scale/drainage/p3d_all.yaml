@@ -1,0 +1,15 @@
+# P3D trained on drainage gen + uCT @128 (Train3, `_all`), scored on the campaign's 256-class domains — Scale-Up.
+#
+# Scores the newest finished run of case/train/drainage/p3d_all — its ckpts/best.pt (best val mae@phi epoch)
+# and its saved config.yaml — under the study's scheme on the campaign's test data. Nothing
+# model-specific lives here: the model, its stream and its inputs are whatever that checkpoint was trained with.
+# Outputs land in out_dir: frames/, inference_test.json, metrics_test.csv and
+# metrics_test.json (which records the checkpoint's path and sha256).
+name: scale_drainage_p3d_all
+data: configs/scale/drainage/data.yaml      # shared by the campaign's cells
+scheme: configs/scale/scheme.yaml           # shared by every cell of the study
+checkpoint:
+  train_case: case/train/drainage/p3d_all
+  run: null                                   # pin a run dir or .pt to score something else (recorded in results)
+  which: best
+out_dir: case/scale/drainage/p3d_all

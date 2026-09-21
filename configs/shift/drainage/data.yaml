@@ -1,0 +1,8 @@
+# Geo-Shift test data for the drainage campaign — shared by every configs/shift/drainage/*.yaml cell.
+root: data/case              # the PoreML dataset: `poreml download` puts it here
+campaign: drainage
+split: splits/shift/drainage.yaml    # frozen, eval-only: every finished 128-class uCT run of the campaign
+                                     # (80 runs: bentheimer 28, buffberea 26, castlegate 26 @128^3)
+                                     # = train + val of splits/drainage/uCT.yaml;
+                                     # drawn and checked by case/shift/run.py split
+require_finished: true

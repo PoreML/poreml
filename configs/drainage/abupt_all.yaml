@@ -1,0 +1,115 @@
+# AB-UPT on the solver's drainage campaign, uCT + generated rocks — the point stream (AB-UPT); Train3 of the benchmark matrix.
+#
+# Same data, split, task fields, metrics and rollout protocol as configs/drainage/unet_all.yaml,
+# so the numbers compare like with like; only the model — and therefore the stream it is
+# fed — differs. `poreml train -c` copies this file into the run directory unchanged.
+name: abupt_drainage_all
+
+data:
+  root: data/case              # the PoreML dataset: `poreml download` puts it here
+  campaign: drainage
+  split: splits/drainage/all.yaml    # frozen Train3 split, 128 / 32 train/val, val rocks unseen in train; see the file's header
+  require_finished: true
+
+task:
+  name: next_frame               # geometry + `history` past frames -> the next saved frame (5000 LBM steps ahead)
+  history: 1
+  params:
+    fields:                      # each frame is [phi, ux, uy, uz, p], normalised as (x - offset) / scale
+      - {name: phi}                             # already in [-1, 1]; solid = -1
+      - {name: u, scale: 0.01}                  # the solver's (D,H,W,3) velocity: |u| ~ 1e-3, max ~4e-2 in lattice units; solid = 0
+      - {name: p, offset: 0.3333, scale: 0.01}  # LBM p = rho / 3 ~ 0.333 +- 0.003; solid = 0
+    stride: 1
+    roi: rock                    # score the rock only: reservoir / porous plate / outlet buffer are boundary devices
+    conditions:                  # project default: condition every model on the run's parameters,
+                                 # one constant static channel each, (transform(value) - offset) / scale
+      - {name: M, transform: log10}   # viscosity ratio: decades apart across the campaign -> log10
+      - {name: theta, scale: 180}     # contact angle in degrees -> O(1)
+    points:                      # the point stream (the model declares representation = points): every pore voxel of
+                                 # the rock is a point; features = [geometry channels | phi ux uy uz p], positions
+                                 # (ijk + 0.5) / 128
+      wall_channel: true  # binary touches-solid flag as feature channel 0 (project default; off rebuilds pre-wall checkpoints)
+      geometry_radii: [1, 2, 4]  # binary wall flag, then local solid fraction in 3^3, 5^3, 9^3 boxes -> 4 static channels;
+                                 # in_channels = 1 + 3 + 2 + 5 (wall | fractions | M theta | fields)
+      train_points: 32768        # AB-UPT trains on anchors: with 16k + 16k anchors this window is exactly the
+                                 # anchors, no queries — upstream's headline training setup (queries appear at
+                                 # eval). Measured on an H200 at batch 2 (8k+16k anchors): 1.3 s/step, 11 GB here;
+                                 # 131072 points 4.8 s/step, 39 GB; all ~550k points 12.7 s/step, 105 GB (6 h/epoch).
+                                 # Eval and rollout always use every pore voxel.
+
+model:
+  name: abupt
+  # Size-matched matrix (2026-09-03): unet3d 11.2M, fno3d 9.7M, p3d-S 10.7M, abupt 10.5M; transolver keeps
+  # its 1.74M (its cost grows with the parameters, 6x at 10M). Underfill keeps its shape-forced unet/fno.
+  precision: bf16                # AB-UPT trains in bf16 autocast (its class default, stated here so the saved config records it): 5x faster, same loss; eval stays fp32
+  params:
+    dim: 192                     # ViT-tiny width, as upstream
+    num_heads: 3
+    geometry_depth: 1
+    blocks: pscscs               # p: cross-attend the geometry, s: within-branch, c: across branches (weight-shared)
+    num_surface_blocks: 8        # surface = wall-adjacent pore voxels (~95k of ~550k), volume = bulk pore voxels
+    num_volume_blocks: 8
+    num_supernodes: 16384        # supernodes among the wall points (geometry branch); upstream DrivAerML uses 16384
+                                 # (was 4096 — below the range their ablation ever tested)
+    supernode_radius: 3.0        # voxels
+    num_surface_anchors: 16384   # anchors get full self-attention; every other point only cross-attends to them.
+    num_volume_anchors: 16384    # 16384 + 16384, as upstream DrivAerML; with train_points 32768 a training window
+                                 # is anchors only — exactly upstream's headline recipe (loss on anchors, no queries)
+    residual: true               # predicts the change of every field on top of the most recent frame (starts as persistence)
+
+train:
+  epochs: 10                 # equal effective epochs: `all` is the union of gen and uCT (128 runs), so 10 epochs = the same run-passes as 20 on gen; see case/train/README.md
+  batch_size: 1                  # as upstream: "batch size 1 because it obtains the best accuracy" (paper C.3);
+                                 # doubles the updates per epoch vs 2
+  lr: 3.0e-4                     # OneCycle peak. Upstream trains with LION at 5e-5; LION wants ~5-10x smaller
+                                 # steps than AdamW, so this is the same effective neighbourhood
+  weight_decay: 0.05             # as upstream (paper C.3/C.5.1); the trainer default is torch's 0.01
+  lr_schedule: onecycle
+  grad_clip: 1.0                 # as upstream
+  device: auto
+  num_workers: 8                 # 8 CPUs per array task (train_task.slurm). A gzip-4 frame costs ~0.45 s to decode and a window needs two, so the loader — not the GPU — paces the voxel models: 4 workers ≈ 0.24 s/window, 8 ≈ 0.14, against 0.03–0.08 s of GPU time (measured 2026-09-02, H200)
+  max_batches: null
+  eval:                          # periodic full evaluation on the val split (all metrics, incl. eval_only curvature)
+    every: 2                     # 5 full evals per run (epochs 2, 4, 6, 8, 10); the last epoch is always evaluated
+    stride: 64
+    rollout: true
+    render: true
+
+rollout:
+  horizon: 64                    # 64 saved frames = 320k LBM steps
+  start: null
+  start_fraction: 0.25
+
+# Identical to configs/drainage/unet_all.yaml; see the comments there.
+metrics:
+  - {error: mae, channel: phi}
+  - {error: rel_mae, channel: phi}
+  - {error: iou, channel: phi}
+  - {descriptor: saturation, error: abs_err, channel: phi}
+  - {descriptor: volume, error: rel_err, channel: phi}
+  - {descriptor: area, error: rel_err, channel: phi}
+  - {descriptor: euler, error: pred, channel: phi}
+  - {descriptor: euler, error: target, channel: phi}
+  - {descriptor: euler, error: rel_err, channel: phi}
+
+  - {descriptor: curvature_hist, error: w1,      channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+  - {descriptor: curvature_hist, error: w1_norm, channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+  - {descriptor: curvature_hist, error: target,  channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+  - {descriptor: curvature_hist, error: pred,    channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+
+  # Integral mean curvature over the scored menisci (Minkowski M2 = ∫H dS, in voxel) and its
+  # area-weighted mean <H> = M2 / scored area (1/voxel, Pc = 2 sigma <H>); the scored area and
+  # the mesh areas behind them land in samples_<split>.csv. Same mesh as curvature_hist.
+  - {descriptor: curvature_mean_integral,      error: rel_err, channel: phi, eval_only: true}   # |M2_pred - M2_true| / M2_true
+  - {descriptor: curvature_mean_integral,      error: target,  channel: phi, eval_only: true}   # M2 of the truth
+  - {descriptor: curvature_mean_integral,      error: pred,    channel: phi, eval_only: true}   #   -> and of the prediction
+  - {descriptor: curvature_mean_integral_norm, error: rel_err, channel: phi, eval_only: true}   # |<H>_pred - <H>_true| / <H>_true
+  - {descriptor: curvature_mean_integral_norm, error: target,  channel: phi, eval_only: true}   # <H> of the truth
+  - {descriptor: curvature_mean_integral_norm, error: pred,    channel: phi, eval_only: true}   #   -> and of the prediction
+  - {error: mae, channel: p}
+  - {error: mae, channel: ux}
+  - {error: mae, channel: uy}
+  - {error: mae, channel: uz}
+
+out_dir: case/train/drainage/abupt_all/ckpts
+seed: 0

@@ -1,0 +1,115 @@
+# P3D on the solver's trapping campaign, generated rocks: blob / poly / sphere — hybrid CNN / windowed transformer; Train4 of the benchmark matrix.
+#
+# Same data, split, task fields, metrics and rollout protocol as configs/trapping/unet_gen.yaml,
+# so the numbers compare like with like; only the model and the batch size differ.
+# `poreml train -c` copies this file into the run directory unchanged.
+name: p3d_trapping_gen
+
+data:
+  root: data/case              # the PoreML dataset: `poreml download` puts it here
+  campaign: trapping
+  split: splits/trapping/gen.yaml    # frozen Train4 split, 64 / 16 train/val, val rocks unseen in train; see the file's header
+  require_finished: true
+
+task:
+  name: next_frame               # geometry + `history` past frames -> the next saved frame (5000 LBM steps ahead)
+  history: 1                     # one frame: in_channels = 1 + 2 + 1 x 5 = 8 (binary rock mask, 1 = solid | M theta | fields); the model predicts all five fields
+  params:
+    fields:                      # each frame is [phi, ux, uy, uz, p], normalised as (x - offset) / scale
+      - {name: phi}                             # already in [-1, 1]; solid = -1
+      - {name: u, scale: 0.01}                  # the solver's (D,H,W,3) velocity: |u| ~ 1e-3, max ~4e-2 in lattice units; solid = 0
+      - {name: p, offset: 0.3333, scale: 0.01}  # LBM p = rho / 3 ~ 0.333 +- 0.003; solid = 0
+    stride: 1
+    roi: rock                    # score the rock only: the inlet / outlet buffers are boundary devices
+    conditions:                  # project default: condition every model on the run's parameters,
+                                 # one constant static channel each, (transform(value) - offset) / scale
+      - {name: M, transform: log10}   # viscosity ratio: decades apart across the campaign -> log10
+      - {name: theta, scale: 180}     # contact angle in degrees -> O(1)
+
+model:
+  name: p3d
+  # Size-matched matrix (2026-09-03): unet3d 11.2M, fno3d 9.7M, p3d-S 10.7M, abupt 10.5M; transolver keeps
+  # its 1.74M (its cost grows with the parameters, 6x at 10M). Underfill keeps its shape-forced unet/fno.
+  params:
+    size: s                      # upstream presets: s (10.7M), b (45.2M), l (179.4M), xl (OOM here).
+                                 # Measured at 128^3 on an H200 sharing the card with another job:
+                                 # s/batch 4 0.28 s/step 15.3 GiB, b/batch 4 0.69 s/step 36.2 GiB,
+                                 # l/batch 4 1.86 s/step 72.3 GiB, l/batch 2 0.98 s/step 37.2 GiB.
+                                 # l at batch 2 with lr 3e-4 and no clipping exploded (train loss
+                                 # spikes to ~1.8 poisoning val, run 20260825-144829); b at batch 4
+                                 # with upstream's lr and clipping replaces it.
+    depth: [2, 2, 2, 2, 2]       # two encoder stages, the latent stage, two decoder stages (upstream)
+    window_size: 4               # attention windows are 4^3 voxels of the compressed volume; not shifted,
+                                 # as upstream's presets and the paper's efficiency note
+    mlp_ratio: 4.0               # channel MLP inside each transformer block
+    skip_connections: true       # concatenated skips in the backbone, additive ones in the conv decoder
+    residual: true               # predicts the change of every field on top of the most recent frame
+  precision: tf32               # project default (2026-09-10): fp32 storage, TF32 tensor-core matmuls; see precision.py
+                                 # (zero-initialised decoder head, so an untrained model is persistence)
+
+train:
+  epochs: 20                 # equal-epoch protocol: every model on every task trains 20 epochs (windows seen = 20 x the split's windows/epoch; see case/train/README.md)
+  batch_size: 4                  # 36 GiB peak at size b; see the model comment
+  lr: 2.0e-4                     # AdamW, fixed — upstream's supervised lr (util/archive/docs/sketch/p3d.md: MSE, AdamW,
+                                 # wd 1e-15, fixed 2e-4, EMA late; poreml has no EMA). 3e-4 unclipped exploded
+                                 # at size l.
+  weight_decay: 0.0              # upstream's 1e-15 is zero in effect; the trainer default is torch's 0.01
+  grad_clip: 1.0                 # size l blew up without it; transolver/abupt already clip at 1.0
+  lr_schedule: steplr            # one halving at 2/3 budget — consolidation against the post-mid-run
+  lr_step_size: 13               # one halving at two thirds of the 20-epoch run (post-mid-run overfit fix from the debrief)
+  lr_gamma: 0.5
+  device: auto
+  num_workers: 8                 # 8 CPUs per array task (train_task.slurm). A gzip-4 frame costs ~0.45 s to decode and a window needs two, so the loader — not the GPU — paces the voxel models: 4 workers ≈ 0.24 s/window, 8 ≈ 0.14, against 0.03–0.08 s of GPU time (measured 2026-09-02, H200)
+  max_batches: null
+  eval:                          # periodic full evaluation on the val split (all metrics, incl. eval_only curvature).
+                                  # One period is ~50 min at stride 8: the val pass is ~19 min (model AND persistence
+                                  # each mesh pred and target for curvature), rollout ~26 min, render ~3 min.
+    every: 4                     # 5 full evals per run (epochs 4, 8, 12, 16, 20); the last epoch is always evaluated
+    stride: 8                    # every 8th val window: curvature meshing is ~1.5 s per frame per side
+    rollout: true                # 64-frame rollout on every val run -> eval/epoch_<k>/rollout_val.json
+    render: true                 # truth | prediction GIF of the first val run -> eval/epoch_<k>/
+
+rollout:
+  horizon: 64                    # 64 saved frames = 320k LBM steps, roughly a fifth to a third of a drainage run
+  start: null                    # null: begin `start_fraction` of the way into each run (an int fixes t0 for all runs)
+  start_fraction: 0.25           # a quarter in, the front is inside the rock — the first frames only show the inlet filling
+
+# The first entry selects the best checkpoint (validation, lower is better for mae). The
+# target has five channels, so every entry names its channel; `mae@p` and `mae@u*` are in
+# the normalised units above. `eval_only` entries (curvature meshing, ~1-2 s per 128^3
+# frame on CPU) are skipped per epoch and scored by the periodic `train.eval`, `poreml
+# eval` and `poreml rollout`. One `curvature_hist` mesh serves all four entries.
+metrics:
+  - {error: mae, channel: phi}                                       # per-voxel |dphi| over rock pore space
+  - {error: rel_mae, channel: phi}                                   # the same as a fraction of mean |phi|
+  - {error: iou, channel: phi}                                       # non-wetting phase overlap (phi > 0)
+  - {descriptor: saturation, error: abs_err, channel: phi}           # rock non-wetting saturation, |pred - true|
+  - {descriptor: volume, error: rel_err, channel: phi}               # non-wetting voxel count, relative error
+  - {descriptor: area, error: rel_err, channel: phi}                 # total surface area of the interesting phase (nw here; underfill sets phase: w)
+  - {descriptor: euler, error: pred, channel: phi}                   # Euler characteristic of the interesting phase: components - loops + cavities
+  - {descriptor: euler, error: target, channel: phi}                 #   -> the ground-truth number alongside
+  - {descriptor: euler, error: rel_err, channel: phi}                # |chi_pred - chi_true| / |chi_true|; NaN when chi_true = 0
+
+  # Meniscus mean-curvature distribution: H > 0 for convex non-wetting menisci, Pc = 2 sigma H.
+  # Real 128^3 drainage frames sit at H ~ 0.02-0.12 /voxel (sigma ~ 0.01): 50 bins over [0, 0.25].
+  - {descriptor: curvature_hist, error: w1,      channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}   # W1 in 1/voxel
+  - {descriptor: curvature_hist, error: w1_norm, channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}   # W1 / sigma_target
+  - {descriptor: curvature_hist, error: target,  channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}   # the distributions
+  - {descriptor: curvature_hist, error: pred,    channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}   #   -> distributions_<split>.csv
+
+  # Integral mean curvature over the scored menisci (Minkowski M2 = ∫H dS, in voxel) and its
+  # area-weighted mean <H> = M2 / scored area (1/voxel, Pc = 2 sigma <H>); the scored area and
+  # the mesh areas behind them land in samples_<split>.csv. Same mesh as curvature_hist.
+  - {descriptor: curvature_mean_integral,      error: rel_err, channel: phi, eval_only: true}   # |M2_pred - M2_true| / M2_true
+  - {descriptor: curvature_mean_integral,      error: target,  channel: phi, eval_only: true}   # M2 of the truth
+  - {descriptor: curvature_mean_integral,      error: pred,    channel: phi, eval_only: true}   #   -> and of the prediction
+  - {descriptor: curvature_mean_integral_norm, error: rel_err, channel: phi, eval_only: true}   # |<H>_pred - <H>_true| / <H>_true
+  - {descriptor: curvature_mean_integral_norm, error: target,  channel: phi, eval_only: true}   # <H> of the truth
+  - {descriptor: curvature_mean_integral_norm, error: pred,    channel: phi, eval_only: true}   #   -> and of the prediction
+  - {error: mae, channel: p}                                         # normalised: (p - 0.3333) / 0.01
+  - {error: mae, channel: ux}                                        # normalised: u / 0.01
+  - {error: mae, channel: uy}
+  - {error: mae, channel: uz}
+
+out_dir: case/train/trapping/p3d_gen/ckpts   # each run gets ckpts/<name>_<stamp>/{config.yaml, provenance.json, metrics.jsonl, ckpts/}
+seed: 0

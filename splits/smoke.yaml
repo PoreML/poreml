@@ -1,0 +1,8 @@
+# Frozen split for the synthetic fixture dataset written by `just fixture`.
+# Real benchmark splits live beside this file and are never edited after publication.
+train:
+  - tiny_0000_M1_theta120
+val:
+  - tiny_0001_M1_theta130
+test:
+  - tiny_0002_M10_theta140

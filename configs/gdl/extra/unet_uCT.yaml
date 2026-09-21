@@ -1,0 +1,102 @@
+# UNet3D on the solver's GDL campaign, uCT GDL samples: gdl_ct / gdl_ct_20 / gdl_ct_40 — the voxel CNN; Train8 of the benchmark matrix.
+# PARKED — the extra "oracle" phase (train on uCT only): not part of the main
+# gen+all schedule. The paper's Geo-Shift/Scale-Up claims need no uCT-only model;
+# this row exists for a possible rebuttal (equal-budget train-on-target reference).
+# Submit with: uv run python case/train/submit.py --extra
+#
+# Everything a result depends on is written down here: data and split, the task's
+# window, the model and its capacity, the optimiser, the metrics, and the rollout
+# protocol. `poreml train -c` copies this file into the run directory unchanged.
+name: unet_gdl_uCT
+
+data:
+  root: data/case              # the PoreML dataset: `poreml download` puts it here
+  campaign: GDL
+  split: splits/gdl/uCT.yaml    # frozen Train8 split, 64 / 16 train/val, val rocks unseen in train; see the file's header
+  require_finished: true
+
+task:
+  name: next_frame               # geometry + `history` past frames -> the next saved frame (5000 LBM steps ahead)
+  history: 1                     # one frame: in_channels = 1 + 2 + 1 x 5 = 8 (binary rock mask, 1 = solid | M theta | fields); the model predicts all five fields
+  params:
+    fields:                      # each frame is [phi, ux, uy, uz, p], normalised as (x - offset) / scale
+      - {name: phi}                             # already in [-1, 1]; solid = -1
+      - {name: u, scale: 0.01}                  # the solver's (D,H,W,3) velocity: |u| ~ 1e-3, max ~4e-2 in lattice units; solid = 0
+      - {name: p, offset: 0.3333, scale: 0.01}  # LBM p = rho / 3 ~ 0.333 +- 0.003; solid = 0
+    stride: 1
+    roi: rock                    # score the rock only: the inlet / outlet buffers are boundary devices
+    conditions:                  # project default: condition every model on the run's parameters,
+                                 # one constant static channel each, (transform(value) - offset) / scale
+      - {name: M, transform: log10}   # viscosity ratio: decades apart across the campaign -> log10
+      - {name: theta, scale: 180}     # contact angle in degrees -> O(1)
+
+model:
+  name: unet3d
+  # Size-matched matrix (2026-09-03): unet3d 11.2M, fno3d 9.7M, p3d-S 10.7M, abupt 10.5M; transolver keeps
+  # its 1.74M (its cost grows with the parameters, 6x at 10M). Underfill keeps its shape-forced unet/fno.
+  params:
+    base: 20                     # channels at full resolution; doubles per level (20, 40, 80, 160, 320 at the bottleneck)
+    depth: 4                     # 128^3 -> 8^3 at the bottleneck; needs spatial sizes divisible by 16
+    groups: 4                    # GroupNorm groups; must divide every width (20 is not divisible by 8)
+    residual: true               # predicts the change of every field on top of the most recent frame (starts as persistence)
+  precision: tf32               # project default (2026-09-10): fp32 storage, TF32 tensor-core matmuls; see precision.py
+
+train:
+  epochs: 20                 # equal-epoch protocol: every model on every task trains 20 epochs (windows seen = 20 x the split's windows/epoch; see case/train/README.md)
+  batch_size: 4
+  lr: 3.0e-4                     # AdamW, no schedule
+  device: auto
+  num_workers: 8                 # 8 CPUs per array task (train_task.slurm). A gzip-4 frame costs ~0.45 s to decode and a window needs two, so the loader — not the GPU — paces the voxel models: 4 workers ≈ 0.24 s/window, 8 ≈ 0.14, against 0.03–0.08 s of GPU time (measured 2026-09-02, H200)
+  max_batches: null
+  eval:                          # periodic full evaluation on the val split (all metrics, incl. eval_only curvature).
+                                  # One period is ~50 min at stride 8: the val pass is ~19 min (model AND persistence
+                                  # each mesh pred and target for curvature), rollout ~26 min, render ~3 min.
+    every: 4                     # 5 full evals per run (epochs 4, 8, 12, 16, 20); the last epoch is always evaluated
+    stride: 8                    # every 8th val window: curvature meshing is ~1.5 s per frame per side
+    rollout: true                # 64-frame rollout on every val run -> eval/epoch_<k>/rollout_val.json
+    render: true                 # truth | prediction GIF of the first val run -> eval/epoch_<k>/
+
+rollout:
+  horizon: 64                    # 64 saved frames = 320k LBM steps, roughly a fifth to a third of a drainage run
+  start: null                    # null: begin `start_fraction` of the way into each run (an int fixes t0 for all runs)
+  start_fraction: 0.25           # a quarter in, the front is inside the rock — the first frames only show the inlet filling
+
+# The first entry selects the best checkpoint (validation, lower is better for mae). The
+# target has five channels, so every entry names its channel; `mae@p` and `mae@u*` are in
+# the normalised units above. `eval_only` entries (curvature meshing, ~1-2 s per 128^3
+# frame on CPU) are skipped per epoch and scored by the periodic `train.eval`, `poreml
+# eval` and `poreml rollout`. One `curvature_hist` mesh serves all four entries.
+metrics:
+  - {error: mae, channel: phi}                                       # per-voxel |dphi| over rock pore space
+  - {error: rel_mae, channel: phi}                                   # the same as a fraction of mean |phi|
+  - {error: iou, channel: phi}                                       # non-wetting phase overlap (phi > 0)
+  - {descriptor: saturation, error: abs_err, channel: phi}           # rock non-wetting saturation, |pred - true|
+  - {descriptor: volume, error: rel_err, channel: phi}               # non-wetting voxel count, relative error
+  - {descriptor: area, error: rel_err, channel: phi}                 # total surface area of the interesting phase (nw here; underfill sets phase: w)
+  - {descriptor: euler, error: pred, channel: phi}                   # Euler characteristic of the interesting phase: components - loops + cavities
+  - {descriptor: euler, error: target, channel: phi}                 #   -> the ground-truth number alongside
+  - {descriptor: euler, error: rel_err, channel: phi}                # |chi_pred - chi_true| / |chi_true|; NaN when chi_true = 0
+
+  # Meniscus mean-curvature distribution: H > 0 for convex non-wetting menisci, Pc = 2 sigma H.
+  # Real 128^3 drainage frames sit at H ~ 0.02-0.12 /voxel (sigma ~ 0.01): 50 bins over [0, 0.25].
+  - {descriptor: curvature_hist, error: w1,      channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}   # W1 in 1/voxel
+  - {descriptor: curvature_hist, error: w1_norm, channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}   # W1 / sigma_target
+  - {descriptor: curvature_hist, error: target,  channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}   # the distributions
+  - {descriptor: curvature_hist, error: pred,    channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}   #   -> distributions_<split>.csv
+
+  # Integral mean curvature over the scored menisci (Minkowski M2 = ∫H dS, in voxel) and its
+  # area-weighted mean <H> = M2 / scored area (1/voxel, Pc = 2 sigma <H>); the scored area and
+  # the mesh areas behind them land in samples_<split>.csv. Same mesh as curvature_hist.
+  - {descriptor: curvature_mean_integral,      error: rel_err, channel: phi, eval_only: true}   # |M2_pred - M2_true| / M2_true
+  - {descriptor: curvature_mean_integral,      error: target,  channel: phi, eval_only: true}   # M2 of the truth
+  - {descriptor: curvature_mean_integral,      error: pred,    channel: phi, eval_only: true}   #   -> and of the prediction
+  - {descriptor: curvature_mean_integral_norm, error: rel_err, channel: phi, eval_only: true}   # |<H>_pred - <H>_true| / <H>_true
+  - {descriptor: curvature_mean_integral_norm, error: target,  channel: phi, eval_only: true}   # <H> of the truth
+  - {descriptor: curvature_mean_integral_norm, error: pred,    channel: phi, eval_only: true}   #   -> and of the prediction
+  - {error: mae, channel: p}                                         # normalised: (p - 0.3333) / 0.01
+  - {error: mae, channel: ux}                                        # normalised: u / 0.01
+  - {error: mae, channel: uy}
+  - {error: mae, channel: uz}
+
+out_dir: case/train/gdl/unet_uCT/ckpts   # each run gets ckpts/<name>_<stamp>/{config.yaml, provenance.json, metrics.jsonl, ckpts/}
+seed: 0

@@ -1,0 +1,6 @@
+# `git archive` (util/release/export_anonymous.sh) leaves these out of the public tree: the
+# development archive is a record for the authors, not part of the release.
+util/archive export-ignore
+.claude export-ignore
+CLAUDE.md export-ignore
+AGENTS.md export-ignore

@@ -1,0 +1,87 @@
+# Frozen split for the GDL / gen training task (beta-0.99 campaign).
+# Drawn by splits/draw.py (seed 20260901) from finished small-domain runs of
+# the dataset (fiber). 64 train / 16 val; val rocks are
+# unseen in train (single-use geometries; the campaign reuses some rocks at another
+# (M, theta)), one val run per (M, theta) cell, source-stratified.
+train:
+- gdl_fiber_0000_128x128x64_M5_th130_b99
+- gdl_fiber_0001_128x128x64_M20_th130_b99
+- gdl_fiber_0003_128x128x64_M1_th120_b99
+- gdl_fiber_0003_128x128x64_M20_th130_b99
+- gdl_fiber_0004_128x128x64_M5_th120_b99
+- gdl_fiber_0009_128x128x64_M10_th130_b99
+- gdl_fiber_0010_128x128x64_M5_th150_b99
+- gdl_fiber_0011_128x128x64_M1_th130_b99
+- gdl_fiber_0011_128x128x64_M5_th150_b99
+- gdl_fiber_0014_128x128x64_M5_th140_b99
+- gdl_fiber_0015_128x128x64_M10_th120_b99
+- gdl_fiber_0015_128x128x64_M1_th130_b99
+- gdl_fiber_0016_128x128x64_M1_th150_b99
+- gdl_fiber_0017_128x128x64_M10_th120_b99
+- gdl_fiber_0017_128x128x64_M5_th140_b99
+- gdl_fiber_0018_128x128x64_M10_th140_b99
+- gdl_fiber_0018_128x128x64_M1_th140_b99
+- gdl_fiber_0020_128x128x64_M20_th120_b99
+- gdl_fiber_0020_128x128x64_M5_th120_b99
+- gdl_fiber_0021_128x128x64_M10_th150_b99
+- gdl_fiber_0021_128x128x64_M20_th150_b99
+- gdl_fiber_0023_128x128x64_M5_th120_b99
+- gdl_fiber_0024_128x128x64_M5_th150_b99
+- gdl_fiber_0025_128x128x64_M20_th150_b99
+- gdl_fiber_0026_128x128x64_M20_th120_b99
+- gdl_fiber_0026_128x128x64_M5_th140_b99
+- gdl_fiber_0027_128x128x64_M1_th140_b99
+- gdl_fiber_0027_128x128x64_M5_th140_b99
+- gdl_fiber_0029_128x128x64_M1_th120_b99
+- gdl_fiber_0030_128x128x64_M10_th130_b99
+- gdl_fiber_0031_128x128x64_M20_th150_b99
+- gdl_fiber_0032_128x128x64_M10_th140_b99
+- gdl_fiber_0032_128x128x64_M1_th150_b99
+- gdl_fiber_0033_128x128x64_M1_th150_b99
+- gdl_fiber_0036_128x128x64_M10_th120_b99
+- gdl_fiber_0036_128x128x64_M10_th150_b99
+- gdl_fiber_0037_128x128x64_M1_th130_b99
+- gdl_fiber_0039_128x128x64_M5_th130_b99
+- gdl_fiber_0040_128x128x64_M10_th140_b99
+- gdl_fiber_0041_128x128x64_M10_th150_b99
+- gdl_fiber_0043_128x128x64_M20_th140_b99
+- gdl_fiber_0044_128x128x64_M1_th120_b99
+- gdl_fiber_0044_128x128x64_M1_th140_b99
+- gdl_fiber_0045_128x128x64_M20_th120_b99
+- gdl_fiber_0046_128x128x64_M20_th150_b99
+- gdl_fiber_0047_128x128x64_M20_th140_b99
+- gdl_fiber_0047_128x128x64_M5_th130_b99
+- gdl_fiber_0048_128x128x64_M1_th140_b99
+- gdl_fiber_0050_128x128x64_M10_th130_b99
+- gdl_fiber_0050_128x128x64_M1_th150_b99
+- gdl_fiber_0051_128x128x64_M10_th120_b99
+- gdl_fiber_0051_128x128x64_M10_th130_b99
+- gdl_fiber_0052_128x128x64_M5_th130_b99
+- gdl_fiber_0053_128x128x64_M20_th130_b99
+- gdl_fiber_0053_128x128x64_M20_th140_b99
+- gdl_fiber_0054_128x128x64_M20_th120_b99
+- gdl_fiber_0056_128x128x64_M10_th140_b99
+- gdl_fiber_0056_128x128x64_M20_th140_b99
+- gdl_fiber_0058_128x128x64_M5_th120_b99
+- gdl_fiber_0059_128x128x64_M10_th150_b99
+- gdl_fiber_0060_128x128x64_M20_th130_b99
+- gdl_fiber_0061_128x128x64_M5_th150_b99
+- gdl_fiber_0062_128x128x64_M1_th120_b99
+- gdl_fiber_0063_128x128x64_M1_th130_b99
+val:
+- gdl_fiber_0002_128x128x64_M5_th120_b99
+- gdl_fiber_0005_128x128x64_M10_th120_b99
+- gdl_fiber_0006_128x128x64_M5_th150_b99
+- gdl_fiber_0007_128x128x64_M5_th140_b99
+- gdl_fiber_0008_128x128x64_M20_th130_b99
+- gdl_fiber_0012_128x128x64_M1_th140_b99
+- gdl_fiber_0013_128x128x64_M20_th140_b99
+- gdl_fiber_0022_128x128x64_M5_th130_b99
+- gdl_fiber_0028_128x128x64_M1_th150_b99
+- gdl_fiber_0034_128x128x64_M1_th130_b99
+- gdl_fiber_0035_128x128x64_M10_th130_b99
+- gdl_fiber_0038_128x128x64_M20_th150_b99
+- gdl_fiber_0042_128x128x64_M10_th150_b99
+- gdl_fiber_0049_128x128x64_M20_th120_b99
+- gdl_fiber_0055_128x128x64_M1_th120_b99
+- gdl_fiber_0057_128x128x64_M10_th140_b99

@@ -1,0 +1,87 @@
+# Frozen split for the trapping / gen training task (beta-0.99 campaign).
+# Drawn by splits/draw.py (seed 20260901) from finished small-domain runs of
+# the dataset (blob, poly, sphere). 64 train / 16 val; val rocks are
+# unseen in train (single-use geometries; the campaign reuses some rocks at another
+# (M, theta)), one val run per (M, theta) cell, source-stratified.
+train:
+- trap_blob128_0002_128_M0.1_th120_b99
+- trap_blob128_0006_128_M0.1_th150_b99
+- trap_blob128_0007_128_M1_th120_b99
+- trap_blob128_0009_128_M0.2_th120_b99
+- trap_blob128_0010_128_M0.2_th120_b99
+- trap_blob128_0012_128_M0.05_th150_b99
+- trap_blob128_0018_128_M1_th120_b99
+- trap_blob128_0023_128_M0.05_th150_b99
+- trap_blob128_0026_128_M0.05_th130_b99
+- trap_blob128_0027_128_M0.1_th130_b99
+- trap_blob128_0029_128_M0.1_th140_b99
+- trap_blob128_0031_128_M0.1_th130_b99
+- trap_blob128_0032_128_M0.2_th140_b99
+- trap_blob128_0038_128_M1_th150_b99
+- trap_blob128_0041_128_M0.1_th130_b99
+- trap_blob128_0044_128_M0.1_th140_b99
+- trap_blob128_0046_128_M1_th120_b99
+- trap_blob128_0049_128_M0.1_th150_b99
+- trap_blob128_0057_128_M0.1_th150_b99
+- trap_blob128_0058_128_M1_th150_b99
+- trap_blob128_0060_128_M0.2_th150_b99
+- trap_blob128_0062_128_M0.2_th140_b99
+- trap_poly128_0000_128_M1_th130_b99
+- trap_poly128_0002_128_M1_th130_b99
+- trap_poly128_0005_128_M1_th140_b99
+- trap_poly128_0007_128_M1_th130_b99
+- trap_poly128_0012_128_M0.05_th140_b99
+- trap_poly128_0015_128_M0.05_th140_b99
+- trap_poly128_0022_128_M0.05_th150_b99
+- trap_poly128_0023_128_M0.05_th120_b99
+- trap_poly128_0026_128_M0.2_th140_b99
+- trap_poly128_0028_128_M0.2_th130_b99
+- trap_poly128_0031_128_M0.2_th150_b99
+- trap_poly128_0033_128_M0.2_th140_b99
+- trap_poly128_0046_128_M1_th140_b99
+- trap_poly128_0051_128_M0.05_th140_b99
+- trap_poly128_0055_128_M1_th130_b99
+- trap_poly128_0056_128_M0.05_th120_b99
+- trap_poly128_0057_128_M1_th150_b99
+- trap_poly128_0058_128_M0.05_th130_b99
+- trap_poly128_0060_128_M1_th140_b99
+- trap_poly128_0061_128_M0.2_th130_b99
+- trap_poly128_0062_128_M0.2_th120_b99
+- trap_sphere128_0002_128_M0.2_th150_b99
+- trap_sphere128_0005_128_M0.2_th150_b99
+- trap_sphere128_0006_128_M0.1_th140_b99
+- trap_sphere128_0011_128_M0.05_th130_b99
+- trap_sphere128_0012_128_M0.2_th130_b99
+- trap_sphere128_0014_128_M0.1_th150_b99
+- trap_sphere128_0015_128_M0.1_th120_b99
+- trap_sphere128_0016_128_M0.1_th130_b99
+- trap_sphere128_0019_128_M0.05_th130_b99
+- trap_sphere128_0022_128_M1_th150_b99
+- trap_sphere128_0028_128_M1_th120_b99
+- trap_sphere128_0031_128_M1_th140_b99
+- trap_sphere128_0032_128_M0.05_th120_b99
+- trap_sphere128_0035_128_M0.2_th130_b99
+- trap_sphere128_0036_128_M0.1_th120_b99
+- trap_sphere128_0039_128_M0.1_th120_b99
+- trap_sphere128_0040_128_M0.05_th120_b99
+- trap_sphere128_0043_128_M0.05_th140_b99
+- trap_sphere128_0047_128_M0.1_th140_b99
+- trap_sphere128_0056_128_M0.2_th120_b99
+- trap_sphere128_0058_128_M0.05_th150_b99
+val:
+- trap_blob128_0001_128_M0.1_th150_b99
+- trap_blob128_0003_128_M0.1_th140_b99
+- trap_blob128_0005_128_M0.05_th130_b99
+- trap_blob128_0014_128_M0.2_th120_b99
+- trap_blob128_0040_128_M1_th140_b99
+- trap_blob128_0061_128_M1_th120_b99
+- trap_poly128_0003_128_M0.2_th140_b99
+- trap_poly128_0034_128_M0.1_th120_b99
+- trap_poly128_0042_128_M0.05_th140_b99
+- trap_poly128_0045_128_M0.2_th130_b99
+- trap_poly128_0047_128_M1_th150_b99
+- trap_sphere128_0021_128_M0.1_th130_b99
+- trap_sphere128_0026_128_M0.05_th150_b99
+- trap_sphere128_0027_128_M1_th130_b99
+- trap_sphere128_0050_128_M0.05_th120_b99
+- trap_sphere128_0060_128_M0.2_th150_b99

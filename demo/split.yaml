@@ -1,0 +1,13 @@
+# The demo's two trajectories: drainage through two different Bentheimer sandstone samples at
+# 128^3, same viscosity ratio (M = 0.1) and contact angle (theta = 130). The model trains on one
+# rock and is tested on a rock it has never seen. Both come from the benchmark's own split
+# (`splits/drainage/uCT.yaml`: the first from its train list, the second from its val list).
+#
+# A split may not name a run twice, and training needs a `val` section to pick `best.pt`, so with
+# only two runs on disk the held-out trajectory sits under `val`: it selects the best epoch *and*
+# is the one the demo rolls out on. The benchmark itself keeps those two roles on disjoint runs.
+train:
+  - drain_bent128_0055_128_M0.1_th130_b99   # 204 frames, 1.4 GB
+val:
+  - drain_bent128_0033_128_M0.1_th130_b99   # 215 frames, 1.5 GB — the held-out test trajectory
+test: []

@@ -1,0 +1,108 @@
+# Transolver++ on the solver's drainage campaign, uCT + generated rocks — the point stream (Transolver++); Train3 of the benchmark matrix.
+#
+# Same data, split, task fields, metrics and rollout protocol as configs/drainage/unet_all.yaml,
+# so the numbers compare like with like; only the model — and therefore the stream it is
+# fed — differs. `poreml train -c` copies this file into the run directory unchanged.
+name: transolver_drainage_all
+
+data:
+  root: data/case              # the PoreML dataset: `poreml download` puts it here
+  campaign: drainage
+  split: splits/drainage/all.yaml    # frozen Train3 split, 128 / 32 train/val, val rocks unseen in train; see the file's header
+  require_finished: true
+
+task:
+  name: next_frame               # geometry + `history` past frames -> the next saved frame (5000 LBM steps ahead)
+  history: 1
+  params:
+    fields:                      # each frame is [phi, ux, uy, uz, p], normalised as (x - offset) / scale
+      - {name: phi}                             # already in [-1, 1]; solid = -1
+      - {name: u, scale: 0.01}                  # the solver's (D,H,W,3) velocity: |u| ~ 1e-3, max ~4e-2 in lattice units; solid = 0
+      - {name: p, offset: 0.3333, scale: 0.01}  # LBM p = rho / 3 ~ 0.333 +- 0.003; solid = 0
+    stride: 1
+    roi: rock                    # score the rock only: reservoir / porous plate / outlet buffer are boundary devices
+    conditions:                  # project default: condition every model on the run's parameters,
+                                 # one constant static channel each, (transform(value) - offset) / scale
+      - {name: M, transform: log10}   # viscosity ratio: decades apart across the campaign -> log10
+      - {name: theta, scale: 180}     # contact angle in degrees -> O(1)
+    points:                      # the point stream (the model declares representation = points): every pore voxel of
+                                 # the rock is a point; features = [geometry channels | phi ux uy uz p], positions
+                                 # (ijk + 0.5) / 128
+      wall_channel: true  # binary touches-solid flag as feature channel 0 (project default; off rebuilds pre-wall checkpoints)
+      geometry_radii: [1, 2, 4, 8]  # binary wall flag, then local solid fraction in 3^3, 5^3, 9^3, 17^3 boxes -> 5 static
+                                    # channels; in_channels = 1 + 4 + 2 + 5 (wall | fractions | M theta | fields). Radius 8 added because [1, 2, 4] gave each point at
+                                    # most a 9^3 view of the rock — far less geometric context than the voxel models
+                                    # see — and the transolver underfits (train loss ~flat over 12 epochs)
+      train_points: null         # every pore voxel of every training window (~360-610k per 128^3 rock): measured
+                                 # 2.0 s/step and 18 GB peak at batch 2 on an H200 (util/archive/docs/sketch/point-based.md);
+                                 # eval and rollout always use every pore voxel
+
+model:
+  name: transolver
+  params:
+    dim: 256                     # upstream's aircraft setting: n_hidden 256, 4 layers, 8 heads, 32 slices, mlp_ratio 2
+    depth: 4
+    heads: 8
+    slices: 32                   # eidetic states per head
+    mlp_ratio: 2
+    dropout: 0.1                 # upstream's aircraft setting (main_airplane.py --dropout 0.1); was omitted (0.0)
+    residual: true               # predicts the change of every field on top of the most recent frame (starts as persistence)
+    checkpoint: true             # activation checkpointing in training (upstream default)
+  precision: tf32               # project default (2026-09-10): fp32 storage, TF32 tensor-core matmuls; see precision.py
+
+train:
+  epochs: 10                 # equal effective epochs: `all` is the union of gen and uCT (128 runs), so 10 epochs = the same run-passes as 20 on gen; see case/train/README.md
+  batch_size: 1                  # as upstream (their default and only setting); doubles the updates per epoch vs 2
+  lr: 1.0e-3                     # OneCycle peak, as upstream
+  weight_decay: 0.0              # upstream trains with plain Adam (train_airplane.py), i.e. no decay; the trainer's
+                                 # AdamW default 0.01 decayed everything incl. the learned temperature bias that
+                                 # exists to prevent the instability upstream's README warns about
+  lr_schedule: onecycle
+  grad_clip: 1.0                 # as upstream (hard-coded in their train loop)
+  device: auto
+  num_workers: 8                 # 8 CPUs per array task (train_task.slurm). A gzip-4 frame costs ~0.45 s to decode and a window needs two, so the loader — not the GPU — paces the voxel models: 4 workers ≈ 0.24 s/window, 8 ≈ 0.14, against 0.03–0.08 s of GPU time (measured 2026-09-02, H200)
+  max_batches: null
+  eval:                          # periodic full evaluation on the val split (all metrics, incl. eval_only curvature)
+    every: 2                     # 5 full evals per run (epochs 2, 4, 6, 8, 10); the last epoch is always evaluated
+    stride: 8
+    rollout: true
+    render: true
+
+rollout:
+  horizon: 64                    # 64 saved frames = 320k LBM steps
+  start: null
+  start_fraction: 0.25
+
+# Identical to configs/drainage/unet_all.yaml; see the comments there.
+metrics:
+  - {error: mae, channel: phi}
+  - {error: rel_mae, channel: phi}
+  - {error: iou, channel: phi}
+  - {descriptor: saturation, error: abs_err, channel: phi}
+  - {descriptor: volume, error: rel_err, channel: phi}
+  - {descriptor: area, error: rel_err, channel: phi}
+  - {descriptor: euler, error: pred, channel: phi}
+  - {descriptor: euler, error: target, channel: phi}
+  - {descriptor: euler, error: rel_err, channel: phi}
+
+  - {descriptor: curvature_hist, error: w1,      channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+  - {descriptor: curvature_hist, error: w1_norm, channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+  - {descriptor: curvature_hist, error: target,  channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+  - {descriptor: curvature_hist, error: pred,    channel: phi, bins: 50, range: [0.0, 0.25], eval_only: true}
+
+  # Integral mean curvature over the scored menisci (Minkowski M2 = ∫H dS, in voxel) and its
+  # area-weighted mean <H> = M2 / scored area (1/voxel, Pc = 2 sigma <H>); the scored area and
+  # the mesh areas behind them land in samples_<split>.csv. Same mesh as curvature_hist.
+  - {descriptor: curvature_mean_integral,      error: rel_err, channel: phi, eval_only: true}   # |M2_pred - M2_true| / M2_true
+  - {descriptor: curvature_mean_integral,      error: target,  channel: phi, eval_only: true}   # M2 of the truth
+  - {descriptor: curvature_mean_integral,      error: pred,    channel: phi, eval_only: true}   #   -> and of the prediction
+  - {descriptor: curvature_mean_integral_norm, error: rel_err, channel: phi, eval_only: true}   # |<H>_pred - <H>_true| / <H>_true
+  - {descriptor: curvature_mean_integral_norm, error: target,  channel: phi, eval_only: true}   # <H> of the truth
+  - {descriptor: curvature_mean_integral_norm, error: pred,    channel: phi, eval_only: true}   #   -> and of the prediction
+  - {error: mae, channel: p}
+  - {error: mae, channel: ux}
+  - {error: mae, channel: uy}
+  - {error: mae, channel: uz}
+
+out_dir: case/train/drainage/transolver_all/ckpts
+seed: 0

@@ -1,0 +1,24 @@
+# Smallest end-to-end run. Point `data.root` at a fixture written by `just fixture`.
+name: smoke
+data:
+  root: tests/_data/tiny
+  campaign: drainage
+  split: splits/smoke.yaml
+task:
+  name: next_frame
+  history: 1
+  params:
+    conditions:                  # project default: condition on the run's parameters
+      - {name: M, transform: log10}
+      - {name: theta, scale: 180}
+model:
+  name: persistence
+  precision: tf32               # project default (2026-09-10): fp32 storage, TF32 tensor-core matmuls; see precision.py
+train:
+  epochs: 1
+  batch_size: 1
+  device: cpu
+  max_batches: 2
+metrics: null   # null means use the task's declared defaults
+out_dir: runs
+seed: 0

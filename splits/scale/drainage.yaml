@@ -1,0 +1,23 @@
+# scale test split, campaign drainage — drawn by case/scale/run.py split on 2026-09-07
+# from data/case.
+# Every finished run whose rock max axis is 256, families all: 16 of 176 discovered.
+# No draw, no quota. Eval-only: train and val are empty.
+train: []
+val: []
+test:
+- drain_bent256_0000_256_M0.1_th120_b99
+- drain_bent256_0036_256_M0.05_th150_b99
+- drain_bent256_0053_256_M0.1_th150_b99
+- drain_blob256_0001_256_M0.05_th150_b99
+- drain_blob256_0045_256_M0.1_th150_b99
+- drain_blob256_0062_256_M0.2_th120_b99
+- drain_buff256_0010_256_M1_th120_b99
+- drain_buff256_0032_256_M1_th150_b99
+- drain_buff256_0034_256_M0.2_th150_b99
+- drain_castle256_0024_256_M0.05_th120_b99
+- drain_castle256_0041_256_M0.2_th120_b99
+- drain_poly256_0005_256_M0.2_th150_b99
+- drain_poly256_0011_256_M1_th120_b99
+- drain_poly256_0034_256_M0.1_th120_b99
+- drain_sphere256_0015_256_M1_th150_b99
+- drain_sphere256_0036_256_M0.05_th120_b99

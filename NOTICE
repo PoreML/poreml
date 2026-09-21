@@ -1,0 +1,25 @@
+poreml includes code derived from third-party projects:
+
+- src/poreml/models/upt.py and src/poreml/models/abupt.py are modified copies of code from
+  https://github.com/Emmi-AI/anchored-branched-universal-physics-transformers
+  Licensed by Emmi AI under the Emmi AI Non-Production License (ENPL).
+  The code has been modified for poreml (see the module docstrings). Under the ENPL it may be
+  used for testing, research, personal or evaluation purposes in non-production environments only.
+
+- src/poreml/models/transolver.py is a modified copy of code from
+  https://github.com/thuml/Transolver_plus
+  MIT License, Copyright (c) 2025 THUML @ Tsinghua University.
+
+- src/poreml/models/fno.py is a modified copy of code from
+  https://github.com/neuraloperator/neuraloperator
+  MIT License, Copyright (c) 2023 NeuralOperator developers.
+  The code has been modified for poreml (see the module docstring).
+
+- src/poreml/models/p3d.py and src/poreml/models/p3d_blocks.py are modified copies of code from
+  https://github.com/tum-pbs/P3D
+  Licensed under the Apache License, Version 2.0 (the repository's LICENSE file), Copyright the
+  P3D authors (Holzschuh, Kohl, Redinger, Thuerey; Technical University of Munich). The
+  repository's pyproject.toml and README badge instead state the MIT License; both are permissive
+  and the Apache-2.0 terms are the stricter of the two, so poreml follows LICENSE. The code has
+  been modified for poreml (see the module docstrings); no NOTICE file was distributed with the
+  upstream release.

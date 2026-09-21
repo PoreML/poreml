@@ -1,0 +1,9 @@
+# Copied for scale_push by util/configs/make_push_study_configs.py from configs/scale/ — identical protocol/data.
+# Scale-Up test data for the gdl campaign — shared by every configs/scale_push/gdl/*.yaml cell.
+root: data/case              # the PoreML dataset: `poreml download` puts it here
+campaign: GDL
+split: splits/scale/gdl.yaml    # frozen, eval-only: every finished 256-class run of the campaign,
+                                     # generated and uCT alike
+                                     # (16 runs: fiber 8, gdl_ct 3, gdl_ct_20 3, gdl_ct_40 2 @256x256x128);
+                                     # drawn by case/scale/run.py split
+require_finished: true

@@ -1,0 +1,23 @@
+# scale test split, campaign trapping — drawn by case/scale/run.py split on 2026-09-07
+# from data/case.
+# Every finished run whose rock max axis is 256, families all: 16 of 176 discovered.
+# No draw, no quota. Eval-only: train and val are empty.
+train: []
+val: []
+test:
+- trap_bent256_0012_256_M0.1_th120_b99
+- trap_bent256_0034_256_M0.05_th120_b99
+- trap_bent256_0040_256_M1_th150_b99
+- trap_blob256_0034_256_M0.1_th150_b99
+- trap_blob256_0046_256_M0.2_th120_b99
+- trap_blob256_0061_256_M0.05_th150_b99
+- trap_buff256_0023_256_M0.2_th120_b99
+- trap_buff256_0056_256_M1_th120_b99
+- trap_buff256_0059_256_M0.1_th150_b99
+- trap_castle256_0023_256_M0.05_th150_b99
+- trap_castle256_0023_256_M0.2_th150_b99
+- trap_poly256_0021_256_M1_th120_b99
+- trap_poly256_0029_256_M0.05_th120_b99
+- trap_poly256_0031_256_M0.2_th150_b99
+- trap_sphere256_0037_256_M0.1_th120_b99
+- trap_sphere256_0052_256_M1_th150_b99

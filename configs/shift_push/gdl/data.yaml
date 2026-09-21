@@ -1,0 +1,9 @@
+# Copied for shift_push by util/configs/make_push_study_configs.py from configs/shift/ — identical protocol/data.
+# Geo-Shift test data for the gdl campaign — shared by every configs/shift_push/gdl/*.yaml cell.
+root: data/case              # the PoreML dataset: `poreml download` puts it here
+campaign: GDL
+split: splits/shift/gdl.yaml    # frozen, eval-only: every finished 128-class uCT run of the campaign
+                                     # (80 runs: gdl_ct 28, gdl_ct_20 26, gdl_ct_40 26 @128x128x64)
+                                     # = train + val of splits/gdl/uCT.yaml;
+                                     # drawn and checked by case/shift/run.py split
+require_finished: true

@@ -1,0 +1,40 @@
+# Frozen split for the underfill training task (Train10; beta-0.99 campaign).
+# Drawn by splits/draw.py (seed 20260901) from the 32 finished flipchip runs of
+# the dataset, underfill — M {5,10,20,30} x theta {30,40,50}, 2-3 runs per cell,
+# every sample used once, so val geometries are unseen in train by construction.
+# 25 train / 7 val; val cells are distinct, capped at 2 per M and 3 per theta
+# level (so every level appears). Run names carry no _b99 tag; beta is 0.99.
+train:
+- fill_flipchip_0000_26x482x476_M5_th30
+- fill_flipchip_0002_26x482x476_M20_th40
+- fill_flipchip_0004_26x482x476_M30_th40
+- fill_flipchip_0006_26x482x476_M30_th50
+- fill_flipchip_0007_26x482x476_M20_th30
+- fill_flipchip_0011_26x482x476_M5_th40
+- fill_flipchip_0013_26x482x476_M10_th30
+- fill_flipchip_0018_26x482x476_M5_th50
+- fill_flipchip_0020_26x482x476_M20_th40
+- fill_flipchip_0023_26x482x476_M10_th40
+- fill_flipchip_0029_26x482x476_M5_th50
+- fill_flipchip_0030_26x482x476_M30_th30
+- fill_flipchip_0033_26x482x476_M10_th30
+- fill_flipchip_0034_26x482x476_M20_th50
+- fill_flipchip_0036_26x482x476_M5_th30
+- fill_flipchip_0038_26x482x476_M30_th40
+- fill_flipchip_0039_26x482x476_M30_th40
+- fill_flipchip_0040_26x482x476_M10_th50
+- fill_flipchip_0041_26x482x476_M20_th30
+- fill_flipchip_0043_26x482x476_M20_th30
+- fill_flipchip_0044_26x482x476_M20_th50
+- fill_flipchip_0052_26x482x476_M10_th40
+- fill_flipchip_0055_26x482x476_M5_th40
+- fill_flipchip_0058_26x482x476_M30_th50
+- fill_flipchip_0060_26x482x476_M10_th50
+val:
+- fill_flipchip_0001_26x482x476_M30_th30
+- fill_flipchip_0012_26x482x476_M5_th50
+- fill_flipchip_0019_26x482x476_M10_th30
+- fill_flipchip_0032_26x482x476_M20_th40
+- fill_flipchip_0048_26x482x476_M30_th50
+- fill_flipchip_0050_26x482x476_M5_th40
+- fill_flipchip_0062_26x482x476_M10_th50

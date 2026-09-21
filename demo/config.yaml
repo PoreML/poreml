@@ -1,0 +1,64 @@
+# The demo's training run: a small 3-D UNet that maps one frame of the phase field to the next
+# saved frame (5 000 lattice-Boltzmann steps later). It is the benchmark recipe
+# (`configs/drainage/unet_gen.yaml`) shrunk to run in minutes: one training trajectory instead of
+# 128, `phi` alone instead of all five fields, 0.4 M parameters instead of 11 M.
+name: demo_base
+
+data:
+  root: data/case                # `poreml download` puts the dataset here
+  campaign: drainage
+  split: demo/split.yaml
+
+task:
+  name: next_frame               # geometry + `history` past frames -> the next saved frame
+  history: 1
+  params:
+    fields:                    # each frame is [phi, ux, uy, uz, p], normalised as (x - offset) / scale
+      - {name: phi}                             # phase field: > 0 non-wetting (invading), < 0 wetting; solid = -1
+      - {name: u, scale: 0.01}                  # velocity (D,H,W,3): |u| ~ 1e-3 in lattice units; solid = 0
+      - {name: p, offset: 0.3333, scale: 0.01}  # LBM p = rho / 3 ~ 0.333 +- 0.003; solid = 0
+    roi: rock                    # score the rock only; the reservoir and the porous plate are boundary devices
+    conditions:                  # every model is conditioned on the run's parameters, one constant channel each
+      - {name: M, transform: log10}
+      - {name: theta, scale: 180}
+
+model:
+  name: unet3d
+  params:
+    base: 12                     # channels at full resolution, doubling per level: 12, 24, 48, 96
+    depth: 3                     # 128^3 -> 16^3 at the bottleneck; 1.00 M parameters
+    groups: 4
+    residual: true               # predicts the change on top of the most recent frame
+  precision: tf32
+
+train:
+  epochs: 20                     # ~10 min on one GPU. The rollout error plateaus around epoch 6 and
+                                 # then bounces by +-0.1; the extra epochs are there to give the
+                                 # rollout-based selection below more candidates to choose from.
+  batch_size: 4
+  lr: 1.0e-3
+  device: auto                   # a GPU when there is one
+  num_workers: 4
+  val_stride: 8                  # the per-epoch selection pass scores every 8th validation window
+  eval:                          # roll the validation run out for `rollout.horizon` steps; when training
+    every: 2                     # ends, the epoch with the best rollout becomes ckpts/best_rollout.pt
+    stride: 8                    # and is evaluated in full under <run_dir>/final/
+    rollout: true
+    render: false                # true adds a 3-D truth | prediction GIF (needs `uv sync --group viz`)
+
+rollout:
+  horizon: 64                    # 64 saved frames = 320 000 solver steps, about a third of the run
+  keyframes: 9                   # predicted frames kept per window for the figures
+
+# The target has five channels, so every entry names its channel; `mae@p` and the velocity
+# errors are in the normalised units above.
+metrics:                         # the first entry selects best.pt
+  - {error: rel_mae, channel: phi}                            # per-voxel error as a fraction of mean |phi|
+  - {error: mae, channel: phi}
+  - {error: iou, channel: phi}                                # overlap of the invading phase
+  - {descriptor: saturation, error: abs_err, channel: phi}    # invading-phase saturation of the rock
+  - {error: mae, channel: p}                                  # pressure
+  - {error: mae_vec, channel: u}                              # velocity, as one vector field
+
+out_dir: demo/runs
+seed: 0

@@ -1,0 +1,23 @@
+# scale test split, campaign GDL — drawn by case/scale/run.py split on 2026-09-07
+# from data/case.
+# Every finished run whose rock max axis is 256, families all: 16 of 176 discovered.
+# No draw, no quota. Eval-only: train and val are empty.
+train: []
+val: []
+test:
+- gdl_fiber_0005_256x256x128_M10_th150_b99
+- gdl_fiber_0018_256x256x128_M20_th120_b99
+- gdl_fiber_0029_256x256x128_M10_th120_b99
+- gdl_fiber_0030_256x256x128_M5_th150_b99
+- gdl_fiber_0035_256x256x128_M1_th120_b99
+- gdl_fiber_0042_256x256x128_M20_th150_b99
+- gdl_fiber_0055_256x256x128_M1_th150_b99
+- gdl_fiber_0063_256x256x128_M5_th120_b99
+- gdl_gdl_ct_0020_256x256x128_M1_th150_b99
+- gdl_gdl_ct_0032_256x256x128_M10_th150_b99
+- gdl_gdl_ct_0053_256x256x128_M5_th120_b99
+- gdl_gdl_ct_20_0038_256x256x128_M10_th120_b99
+- gdl_gdl_ct_20_0046_256x256x128_M20_th120_b99
+- gdl_gdl_ct_20_0053_256x256x128_M20_th150_b99
+- gdl_gdl_ct_40_0003_256x256x128_M5_th150_b99
+- gdl_gdl_ct_40_0036_256x256x128_M1_th120_b99
